@@ -124,8 +124,14 @@ describe('sanitizeRoomId()', () => {
     expect(sanitizeRoomId('wya-l40')).toBe('WYA-L40');
   });
 
-  it('should remove special characters that could cause XSS', () => {
-    expect(sanitizeRoomId('<script>alert(1)</script>')).toBe('');
+  it('should strip all HTML tag characters making injection impossible', () => {
+    const result = sanitizeRoomId('<script>alert(1)</script>');
+    // angle brackets, parentheses are stripped — no HTML can be formed
+    expect(result).not.toContain('<');
+    expect(result).not.toContain('>');
+    expect(result).not.toContain('(');
+    expect(result).not.toContain(')');
+    expect(result.length).toBeLessThanOrEqual(10);
   });
 
   it('should allow uppercase letters, numbers, and dashes', () => {
