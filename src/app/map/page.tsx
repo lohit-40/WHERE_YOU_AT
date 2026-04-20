@@ -7,7 +7,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import StadiumMap, { Pin } from '@/components/StadiumMap';
 import { Share2, Search, Navigation2, Crown } from 'lucide-react';
 import { ref, onValue, set } from 'firebase/database';
-import { db } from '@/lib/firebase';
+import { db, signInAnonymousUser, onAuthChange, logEvent } from '@/lib/firebase';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
@@ -27,8 +27,18 @@ export default function MapPage() {
   const [isGeminiLoading, setIsGeminiLoading] = useState(false);
   const [liveStatus, setLiveStatus] = useState('');
 
-  // Generate a random ID for the current user
-  const [userId] = useState(() => 'user-' + Math.random().toString(36).substring(2, 9));
+  // Firebase anonymous auth — stable UID across sessions
+  const [userId, setUserId] = useState(() => 'user-' + Math.random().toString(36).substring(2, 9));
+
+  // Sign in anonymously with Firebase Authentication on mount
+  useEffect(() => {
+    signInAnonymousUser().then((user) => {
+      if (user?.uid) setUserId(user.uid);
+    });
+    return onAuthChange((user) => {
+      if (user?.uid) setUserId(user.uid);
+    });
+  }, []);
 
   useEffect(() => {
     if (!roomId) return;
@@ -58,8 +68,19 @@ export default function MapPage() {
     }
   }, [roomId, userId]);
 
-  const generateRoomId = useCallback(() => 'WYA-' + Math.random().toString(36).substring(2, 5).toUpperCase(), []);
-  const joinRoom = useCallback(() => { if (inputRoomId) setRoomId(inputRoomId.toUpperCase()); }, [inputRoomId]);
+  const generateRoomId = useCallback(() => {
+    const id = 'WYA-' + Math.random().toString(36).substring(2, 5).toUpperCase();
+    logEvent('room_created', { room_id: id, user_id: userId });
+    return id;
+  }, [userId]);
+
+  const joinRoom = useCallback(() => {
+    if (inputRoomId) {
+      const id = inputRoomId.toUpperCase();
+      setRoomId(id);
+      logEvent('room_joined', { room_id: id, user_id: userId });
+    }
+  }, [inputRoomId, userId]);
   
   const getGridCode = useCallback((x: number, y: number) => {
     const colIndex = Math.floor(Math.max(0, Math.min(x / 100, 9)));
@@ -73,6 +94,8 @@ export default function MapPage() {
     setPins((prev) => [...prev.filter(p => !p.isSelf), newPin]);
     try {
       set(ref(db, `rooms/${roomId}/${userId}`), { x, y, intent: activeIntent });
+      logEvent('pin_dropped', { room_id: roomId, intent: activeIntent, grid: getGridCode(x, y) });
+      if (activeIntent === 'sos') logEvent('sos_activated', { room_id: roomId, grid: getGridCode(x, y) });
     } catch {
       console.warn("Mock sync successful");
     }
@@ -82,6 +105,7 @@ export default function MapPage() {
   const askGeminiCrowdGuide = async () => {
     setIsGeminiLoading(true);
     setGeminiResponse(null);
+    logEvent('gemini_queried', { room_id: roomId, pin_count: pins.length });
     try {
       const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
       if (!apiKey) throw new Error("No API Key");

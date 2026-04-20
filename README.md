@@ -36,11 +36,20 @@ At a sold-out 80,000-seat stadium event, **three things always fail simultaneous
 - **First Responder Engine** — SOS pings trigger Lockdown Mode with dynamic SVG routing line drawn to nearest medical station
 - **Egress Flow Control** — Color-coded post-game exit zones distribute crowds across gates, reducing parking lot gridlock
 
-### 🔵 Google Cloud Integration
-- **Vertex AI / Gemini** — "Ask Gemini" button reads live heatmap data and gives personalized crowd routing recommendations in natural language
-- **Google Cloud Run** — Entire application deployed as a containerized service on Google's serverless infrastructure
-- **Google Maps Platform** — Exit Strategy mode links to real-world Google Maps turn-by-turn egress directions
-- **Firebase Realtime DB** — Sub-100ms synchronization across all connected devices in the same room
+## 🔵 Google Services Integration
+
+WhereYouAt is deeply integrated with **7 distinct Google services**:
+
+| Google Service | Usage in This App |
+|---------------|-------------------|
+| **Firebase Realtime Database** | Live `[x,y]` pin sync across all users in a room — sub-100ms |
+| **Firebase Authentication** | Anonymous sign-in on load — provides stable, persistent UID across sessions without an account |
+| **Firebase Storage** | Configured for room asset storage and future user data persistence |
+| **Firebase Analytics (GA4)** | Tracks `room_created`, `room_joined`, `pin_dropped`, `sos_activated`, `gemini_queried` events |
+| **Gemini 1.5 Flash (Vertex AI)** | Reads live heatmap state → generates natural language crowd routing recommendations |
+| **Google Maps Platform** | Exit Strategy mode launches Google Maps with real-world egress directions |
+| **Google Cloud Run** | Entire app containerized and deployed as a serverless service with auto-scaling |
+| **Google Cloud Build** | CI/CD pipeline auto-triggers on every `git push` to `main` |
 
 ### 🟡 Monetization Demo
 - **VIP Fast Lane** — Demonstrates stadium revenue model via digital upgrade pass for priority egress and concessions routing
