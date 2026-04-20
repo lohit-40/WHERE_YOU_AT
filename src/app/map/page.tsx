@@ -1,5 +1,8 @@
 'use client';
 
+// Force dynamic rendering — Firebase cannot be initialized at build time
+export const dynamic = 'force-dynamic';
+
 import React, { useState, useEffect } from 'react';
 import StadiumMap, { Pin } from '@/components/StadiumMap';
 import { Share2, Search, Flame, AlertCircle, Coffee, Navigation2, Crown } from 'lucide-react';
